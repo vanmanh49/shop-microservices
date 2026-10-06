@@ -54,7 +54,7 @@ No cluster is available on the authoring machine, so these are pinned by asserti
 
 - [ ] **Step 4: Write `k8s/namespace.yaml` and `k8s/config.yaml`.** The Secret uses `stringData` with the Compose development values and a comment that they are development-only.
 
-- [ ] **Step 5: Write `k8s/postgres.yaml`** — headless-free plain Service + StatefulSet (`serviceName: postgres`). `POSTGRES_USER`/`POSTGRES_PASSWORD` from `shop-secrets` keys `DB_USER`/`DB_PASSWORD`, `POSTGRES_DB: shop`. `volumeClaimTemplates`: `data`, `ReadWriteOnce`, 1Gi, no `storageClassName`, mounted at `/var/lib/postgresql`. ConfigMap `postgres-init` mounted at `/docker-entrypoint-initdb.d`. Readiness: exec `pg_isready -U shop -d notificationdb`, period 5s.
+- [ ] **Step 5: Write `k8s/postgres.yaml`** — plain Service + StatefulSet (`serviceName: postgres`). `POSTGRES_USER`/`POSTGRES_PASSWORD` from `shop-secrets` keys `DB_USER`/`DB_PASSWORD`, `POSTGRES_DB: shop`. `volumeClaimTemplates`: `data`, `ReadWriteOnce`, 1Gi, no `storageClassName`, mounted at `/var/lib/postgresql`. ConfigMap `postgres-init` mounted at `/docker-entrypoint-initdb.d`. Readiness: exec `pg_isready -U shop -d notificationdb`, period 5s.
 
 - [ ] **Step 6: Write `k8s/kafka.yaml`** — env copied from Compose except `KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093`; `enableServiceLinks: false`; Service exposes 9092 only; readiness: `tcpSocket` 9092. Memory request 512Mi, limit 768Mi.
 
@@ -92,13 +92,13 @@ No cluster is available on the authoring machine, so these are pinned by asserti
 
 **Files:**
 - Create: `scripts/k8s-images.sh`
-- Modify: `README.md`, `Dockerfile:14` (comment only: curl is also unused by Kubernetes, leave the install)
+- Modify: `README.md`
 
 - [ ] **Step 1: Write `scripts/k8s-images.sh`** — usage `k8s-images.sh [registry] [tag]`, tag default `0.1.0`. For each of the eight modules: `docker build --build-arg MODULE=$m -t $name .`, where `$name` is `shop/$m:$tag` without a registry and `$registry/shop/$m:$tag` with one; push only when a registry is given.
 
 - [ ] **Step 2: Check it** — `bash -n scripts/k8s-images.sh` → no output.
 
-- [ ] **Step 3: README** — add "Run on Kubernetes" after the Compose instructions: prerequisites (cluster, `kubectl`, default storage class, about 6 GB of memory); build and push; set the registry in `kustomization.yaml`; `kubectl apply -k .`; `kubectl -n shop get pods -w` with the note that restarts during first start are expected; port-forward commands; smoke test; switching the gateway to `LoadBalancer`; troubleshooting (`ImagePullBackOff`, Pending PVC); `kubectl delete -k .` and the note that the Postgres volume claim survives it. Remove "Kubernetes manifests" from the "Not included" line. Do not change the Dockerfile after all if the comment is still accurate.
+- [ ] **Step 3: README** — add "Run on Kubernetes" after the Compose instructions: prerequisites (cluster, `kubectl`, default storage class, about 6 GB of memory); build and push; set the registry in `kustomization.yaml`; `kubectl apply -k .`; `kubectl -n shop get pods -w` with the note that restarts during first start are expected; port-forward commands; smoke test; switching the gateway to `LoadBalancer`; troubleshooting (`ImagePullBackOff`, Pending PVC); `kubectl delete -k .` and the note that the Postgres volume claim survives it. Remove "Kubernetes manifests" from the "Not included" line.
 
 - [ ] **Step 4: Run `./scripts/k8s-check.sh`** → `OK`.
 
