@@ -31,5 +31,8 @@ images="$(grep -cE '^ +image: shop/' <<<"$RENDERED" || true)"
 [[ "$images" == 8 ]] || fail "expected 8 shop/ images, found $images"
 slow="$(grep -A3 -E '^ +startupProbe:' <<<"$RENDERED" | grep -c 'failureThreshold: 30' || true)"
 [[ "$slow" == 8 ]] || fail "expected 8 startup probes with failureThreshold: 30, found $slow"
+# Heap is capped at 256m; the rest of the limit is for metaspace, code cache and threads.
+roomy="$(grep -c 'memory: 768Mi' <<<"$RENDERED" || true)"
+[[ "$roomy" == 9 ]] || fail "expected the 8 services and kafka to have a 768Mi memory limit, found $roomy"
 
 echo OK

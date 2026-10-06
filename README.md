@@ -146,6 +146,10 @@ pointing at it, and Docker to build the images.
 ./scripts/k8s-images.sh registry.example.com     # builds and pushes eight images
 ```
 
+The images are built for this machine's CPU. If the cluster's nodes differ (an Apple
+Silicon laptop building for the usual amd64 cloud nodes), set the platform:
+`PLATFORM=linux/amd64 ./scripts/k8s-images.sh registry.example.com`.
+
 Then uncomment the `images:` block at the bottom of `kustomization.yaml` and put your
 registry in it. On a local cluster that uses Docker's own images (Docker Desktop), run
 `./scripts/k8s-images.sh` with no argument and leave `kustomization.yaml` alone. With
@@ -182,6 +186,7 @@ because it removes the `shop` namespace.
 | Symptom | Cause |
 |---|---|
 | Service pods in `ImagePullBackOff` | The cluster cannot find `shop/...`: set the registry in `kustomization.yaml`, or load the images into the local cluster |
+| `no matching manifest` in `kubectl describe pod`, or `exec format error` in the logs | The images were built for a different CPU: rebuild with `PLATFORM=linux/amd64` (or `linux/arm64`) |
 | `postgres-0` stays `Pending` | The cluster has no default storage class (`kubectl get storageclass`) |
 | A pod is `OOMKilled` | Raise its memory limit in `k8s/<name>.yaml` |
 
