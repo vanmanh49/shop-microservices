@@ -64,9 +64,10 @@ generated ConfigMap.
 
 ## Startup order
 
-`depends_on` has no equivalent. A service that starts before the config server, Postgres
-or Kafka exits and is restarted by Kubernetes until its dependencies are up. First start
-may show a few restarts; this is expected.
+`depends_on` has no equivalent. A service that starts before the config server or Postgres
+exits and is restarted by Kubernetes, with a growing delay, until its dependencies are up.
+A missing Kafka broker does not stop a service; the clients reconnect. First start shows
+restarts and can take three to six minutes; this is expected.
 
 ## Access
 

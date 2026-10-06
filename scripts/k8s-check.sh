@@ -19,7 +19,7 @@ done
 
 # A Service named kafka makes Kubernetes inject KAFKA_PORT, which the Kafka image
 # would read as a broker setting.
-grep -q 'enableServiceLinks: false' <<<"$RENDERED" || fail "kafka pod must set enableServiceLinks: false"
+grep -q 'enableServiceLinks: false' k8s/kafka.yaml || fail "kafka pod must set enableServiceLinks: false"
 
 # Generated ConfigMaps get a hash suffix; a reference without one mounts nothing.
 if grep -E 'postgres-init|prometheus-config' <<<"$RENDERED" | grep -vqE '(postgres-init|prometheus-config)-[a-z0-9]{10}'; then
@@ -29,8 +29,15 @@ fi
 # The eight Spring Boot services, each with five minutes to start before liveness applies.
 images="$(grep -cE '^ +image: shop/' <<<"$RENDERED" || true)"
 [[ "$images" == 8 ]] || fail "expected 8 shop/ images, found $images"
-slow="$(grep -A3 -E '^ +startupProbe:' <<<"$RENDERED" | grep -c 'failureThreshold: 30' || true)"
-[[ "$slow" == 8 ]] || fail "expected 8 startup probes with failureThreshold: 30, found $slow"
+startup="$(grep -A6 -E '^ +startupProbe:' <<<"$RENDERED")"
+for setting in 'failureThreshold: 30' 'periodSeconds: 10'; do
+  slow="$(grep -c "$setting" <<<"$startup" || true)"
+  [[ "$slow" == 8 ]] || fail "expected 8 startup probes with $setting, found $slow"
+done
+
+# The default probe timeout of one second is too short for a busy node.
+timeouts="$(grep -c 'timeoutSeconds: 5' <<<"$RENDERED" || true)"
+[[ "$timeouts" == 28 ]] || fail "expected all 28 probes to have timeoutSeconds: 5, found $timeouts"
 # Heap is capped at 256m; the rest of the limit is for metaspace, code cache and threads.
 roomy="$(grep -c 'memory: 768Mi' <<<"$RENDERED" || true)"
 [[ "$roomy" == 9 ]] || fail "expected the 8 services and kafka to have a 768Mi memory limit, found $roomy"

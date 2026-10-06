@@ -98,7 +98,7 @@ No cluster is available on the authoring machine, so these are pinned by asserti
 
 - [ ] **Step 2: Check it** — `bash -n scripts/k8s-images.sh` → no output.
 
-- [ ] **Step 3: README** — add "Run on Kubernetes" after the Compose instructions: prerequisites (cluster, `kubectl`, default storage class, about 6 GB of memory); build and push; set the registry in `kustomization.yaml`; `kubectl apply -k .`; `kubectl -n shop get pods -w` with the note that restarts during first start are expected; port-forward commands; smoke test; switching the gateway to `LoadBalancer`; troubleshooting (`ImagePullBackOff`, Pending PVC); `kubectl delete -k .` and the note that the Postgres volume claim survives it. Remove "Kubernetes manifests" from the "Not included" line.
+- [ ] **Step 3: README** — add "Run on Kubernetes" after the Compose instructions: prerequisites (cluster, `kubectl`, default storage class, about 6 GB of memory); build and push; set the registry in `kustomization.yaml`; `kubectl apply -k .`; `kubectl -n shop get pods -w` with the note that restarts during first start are expected; port-forward commands; smoke test; switching the gateway to `LoadBalancer`; troubleshooting (`ImagePullBackOff`, Pending PVC); `kubectl delete -k .` and the note that it removes the Postgres volume too, because the namespace is deleted. Remove "Kubernetes manifests" from the "Not included" line.
 
 - [ ] **Step 4: Run `./scripts/k8s-check.sh`** → `OK`.
 

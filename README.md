@@ -151,10 +151,29 @@ Silicon laptop building for the usual amd64 cloud nodes), set the platform:
 `PLATFORM=linux/amd64 ./scripts/k8s-images.sh registry.example.com`.
 
 Then uncomment the `images:` block at the bottom of `kustomization.yaml` and put your
-registry in it. On a local cluster that uses Docker's own images (Docker Desktop), run
-`./scripts/k8s-images.sh` with no argument and leave `kustomization.yaml` alone. With
-kind or minikube, also load the images into the cluster (`kind load docker-image ...`,
-`minikube image load ...`).
+registry in it.
+
+- The images are named `<registry>/shop/<service>`. Docker Hub does not accept that nested
+  name; use a registry that does (GHCR, ECR, Artifact Registry, ACR).
+- On ECR, create the eight `shop/<service>` repositories before pushing.
+- If the registry is private, let the namespace pull from it before you deploy:
+
+  ```bash
+  kubectl apply -f k8s/namespace.yaml
+  kubectl -n shop create secret docker-registry regcred --docker-server=registry.example.com \
+    --docker-username=USER --docker-password=TOKEN
+  kubectl -n shop patch serviceaccount default -p '{"imagePullSecrets":[{"name":"regcred"}]}'
+  ```
+
+On a local cluster there is no registry: run `./scripts/k8s-images.sh` with no argument and
+leave `kustomization.yaml` alone. A Docker Desktop cluster that shares Docker's image store
+needs nothing more. With kind or minikube, load the images into the cluster:
+
+```bash
+for m in discovery-server config-server auth-service product-service inventory-service order-service notification-service api-gateway; do
+  kind load docker-image shop/$m:0.1.0      # or: minikube image load shop/$m:0.1.0
+done
+```
 
 **2. Deploy.**
 
@@ -163,8 +182,9 @@ kubectl apply -k .
 kubectl -n shop get pods -w      # wait until every pod is 1/1 Running
 ```
 
-A service that starts before the config server, Postgres or Kafka exits and is restarted,
-so a few restarts during the first minutes are expected.
+A service that starts before the config server or Postgres exits, and Kubernetes restarts
+it after a delay that grows with each attempt. Restarts and `CrashLoopBackOff` during the
+first minutes are expected; the whole stack can take three to six minutes to settle.
 
 **3. Use it.** Nothing is exposed outside the cluster; forward the ports you want:
 
@@ -178,7 +198,9 @@ kubectl -n shop port-forward svc/prometheus 9090:9090
 ```
 
 To give the gateway a public address instead, add `type: LoadBalancer` to the Service in
-`k8s/api-gateway.yaml`. Change the credentials in `k8s/config.yaml` first.
+`k8s/api-gateway.yaml`. Change the credentials in `k8s/config.yaml` first, and do it before
+the first deploy: Postgres only reads `DB_PASSWORD` when it creates an empty volume, so
+changing it later locks the services out until you also change it inside the database.
 
 **Remove it.** `kubectl delete -k .` deletes everything, including the database volume,
 because it removes the `shop` namespace.

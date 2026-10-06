@@ -35,6 +35,7 @@ spec:
               path: /-/ready
               port: 9090
             periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests: { cpu: 100m, memory: 256Mi }
             limits: { memory: 512Mi }
