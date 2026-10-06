@@ -13,6 +13,8 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       properties:
         spring.json.add.type.headers: false
+        # Fail fast when the broker is down instead of holding the request for a minute.
+        max.block.ms: 5000
   http:
     clients:
       connect-timeout: 2s
@@ -22,18 +24,6 @@ spring:
       resilience4j:
         # The HTTP client timeouts above bound each call.
         disable-time-limiter: true
-
-resilience4j:
-  circuitbreaker:
-    configs:
-      default:
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        # 4xx responses are business outcomes, not dependency failures.
-        ignore-exceptions:
-          - org.springframework.web.client.HttpClientErrorException
 
 shop:
   clients:
