@@ -1,0 +1,40 @@
+# The whole shop stack for Kubernetes: kubectl apply -k .
+# This file sits at the repo root so it can reuse the files in infra/.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shop
+
+resources:
+  - k8s/namespace.yaml
+  - k8s/config.yaml
+  - k8s/postgres.yaml
+  - k8s/kafka.yaml
+  - k8s/zipkin.yaml
+  - k8s/prometheus.yaml
+  - k8s/discovery-server.yaml
+  - k8s/config-server.yaml
+  - k8s/auth-service.yaml
+  - k8s/product-service.yaml
+  - k8s/inventory-service.yaml
+  - k8s/order-service.yaml
+  - k8s/notification-service.yaml
+  - k8s/api-gateway.yaml
+
+configMapGenerator:
+  - name: postgres-init
+    files: [infra/postgres/init.sql]
+  - name: prometheus-config
+    files: [infra/prometheus/prometheus.yml]
+
+# To pull the service images from a registry, uncomment this block and replace
+# registry.example.com with yours (the one given to scripts/k8s-images.sh).
+# images:
+#   - { name: shop/discovery-server, newName: registry.example.com/shop/discovery-server }
+#   - { name: shop/config-server, newName: registry.example.com/shop/config-server }
+#   - { name: shop/auth-service, newName: registry.example.com/shop/auth-service }
+#   - { name: shop/product-service, newName: registry.example.com/shop/product-service }
+#   - { name: shop/inventory-service, newName: registry.example.com/shop/inventory-service }
+#   - { name: shop/order-service, newName: registry.example.com/shop/order-service }
+#   - { name: shop/notification-service, newName: registry.example.com/shop/notification-service }
+#   - { name: shop/api-gateway, newName: registry.example.com/shop/api-gateway }

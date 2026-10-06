@@ -9,7 +9,7 @@ working together, with every shortcut called out.
 | Language / build | Java 27, Maven 3.10.0 (wrapper) |
 | Framework | Spring Boot 4.1.1, Spring Cloud 2025.1.3 |
 | Infrastructure | PostgreSQL 18.6, Apache Kafka 4.3.1, Zipkin 3.6.1, Prometheus 3.15.0 |
-| Runtime | Docker Compose |
+| Runtime | Docker Compose or Kubernetes |
 
 ## Architecture
 
@@ -132,6 +132,88 @@ curl -s -X POST $BASE/api/orders/1/cancel -H "Authorization: Bearer $TOKEN"
 
 Errors are returned as [problem details](https://www.rfc-editor.org/rfc/rfc9457) JSON.
 
+## Run on Kubernetes
+
+The same stack as plain manifests in `k8s/`, assembled by `kustomization.yaml`. It works on
+any cluster; Eureka and the config server are kept, so nothing in the services changes.
+
+You need a cluster with a default storage class and about 6 GB of free memory, `kubectl`
+pointing at it, and Docker to build the images.
+
+**1. Build the images.** With a registry your cluster can pull from:
+
+```bash
+./scripts/k8s-images.sh registry.example.com     # builds and pushes eight images
+```
+
+The images are built for this machine's CPU. If the cluster's nodes differ (an Apple
+Silicon laptop building for the usual amd64 cloud nodes), set the platform:
+`PLATFORM=linux/amd64 ./scripts/k8s-images.sh registry.example.com`.
+
+Then uncomment the `images:` block at the bottom of `kustomization.yaml` and put your
+registry in it.
+
+- The images are named `<registry>/shop/<service>`. Docker Hub does not accept that nested
+  name; use a registry that does (GHCR, ECR, Artifact Registry, ACR).
+- On ECR, create the eight `shop/<service>` repositories before pushing.
+- If the registry is private, let the namespace pull from it before you deploy:
+
+  ```bash
+  kubectl apply -f k8s/namespace.yaml
+  kubectl -n shop create secret docker-registry regcred --docker-server=registry.example.com \
+    --docker-username=USER --docker-password=TOKEN
+  kubectl -n shop patch serviceaccount default -p '{"imagePullSecrets":[{"name":"regcred"}]}'
+  ```
+
+On a local cluster there is no registry: run `./scripts/k8s-images.sh` with no argument and
+leave `kustomization.yaml` alone. A Docker Desktop cluster that shares Docker's image store
+needs nothing more. With kind or minikube, load the images into the cluster:
+
+```bash
+for m in discovery-server config-server auth-service product-service inventory-service order-service notification-service api-gateway; do
+  kind load docker-image shop/$m:0.1.0      # or: minikube image load shop/$m:0.1.0
+done
+```
+
+**2. Deploy.**
+
+```bash
+kubectl apply -k .
+kubectl -n shop get pods -w      # wait until every pod is 1/1 Running
+```
+
+A service that starts before the config server or Postgres exits, and Kubernetes restarts
+it after a delay that grows with each attempt. Restarts and `CrashLoopBackOff` during the
+first minutes are expected; the whole stack can take three to six minutes to settle.
+
+**3. Use it.** Nothing is exposed outside the cluster; forward the ports you want:
+
+```bash
+kubectl -n shop port-forward svc/api-gateway 8080:8080 &
+./scripts/smoke-test.sh
+
+kubectl -n shop port-forward svc/discovery-server 8761:8761   # Eureka dashboard
+kubectl -n shop port-forward svc/zipkin 9411:9411
+kubectl -n shop port-forward svc/prometheus 9090:9090
+```
+
+To give the gateway a public address instead, add `type: LoadBalancer` to the Service in
+`k8s/api-gateway.yaml`. Change the credentials in `k8s/config.yaml` first, and do it before
+the first deploy: Postgres only reads `DB_PASSWORD` when it creates an empty volume, so
+changing it later locks the services out until you also change it inside the database.
+
+**Remove it.** `kubectl delete -k .` deletes everything, including the database volume,
+because it removes the `shop` namespace.
+
+| Symptom | Cause |
+|---|---|
+| Service pods in `ImagePullBackOff` | The cluster cannot find `shop/...`: set the registry in `kustomization.yaml`, or load the images into the local cluster |
+| `no matching manifest` in `kubectl describe pod`, or `exec format error` in the logs | The images were built for a different CPU: rebuild with `PLATFORM=linux/amd64` (or `linux/arm64`) |
+| `postgres-0` stays `Pending` | The cluster has no default storage class (`kubectl get storageclass`) |
+| A pod is `OOMKilled` | Raise its memory limit in `k8s/<name>.yaml` |
+
+`./scripts/k8s-check.sh` checks the manifests without a cluster.
+
 ## Tests
 
 ```bash
@@ -183,7 +265,7 @@ the services working together.
 - **No shared code between services.** DTOs and the order event are duplicated on purpose,
   so services only depend on each other's JSON.
 
-Not included: Kubernetes manifests, a CI pipeline, Grafana dashboards, a frontend, refresh
+Not included: a CI pipeline, Grafana dashboards, a frontend, refresh
 tokens, rate limiting.
 
 ## Design documents

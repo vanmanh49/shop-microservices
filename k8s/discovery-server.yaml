@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-server
+spec:
+  selector:
+    app: discovery-server
+  ports:
+    - port: 8761
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-server
+  template:
+    metadata:
+      labels:
+        app: discovery-server
+    spec:
+      containers:
+        - name: discovery-server
+          image: shop/discovery-server:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8761
+          env:
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xmx256m" }
+          # Up to five minutes to start; a service that comes up before its
+          # dependencies exits and is restarted.
+          startupProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8761 }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8761 }
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8761 }
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits: { memory: 768Mi }
