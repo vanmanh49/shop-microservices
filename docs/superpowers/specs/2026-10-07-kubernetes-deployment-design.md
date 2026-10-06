@@ -46,7 +46,7 @@ order, notification, api-gateway): one Deployment with 1 replica each.
 - Probes on the actuator port: startup `/actuator/health/readiness` (up to 5 minutes),
   readiness `/actuator/health/readiness`, liveness `/actuator/health/liveness`. Spring
   Boot enables these endpoints automatically when it detects Kubernetes.
-- Memory request 384Mi, limit 512Mi (heap is capped at 256m); CPU request 100m, no limit.
+- Memory request 384Mi, limit 768Mi (heap is capped at 256m); CPU request 100m, no limit.
 - Service of type `ClusterIP` on the module's port.
 
 **Postgres**: StatefulSet, 1 replica, `postgres:18.6`, a 1Gi `volumeClaimTemplate` on the
@@ -78,7 +78,7 @@ balancer. The README shows the one-line change to `type: LoadBalancer`.
 
 ## Images
 
-`scripts/k8s-images.sh <registry> [tag]` runs `docker build --build-arg MODULE=<m>` and
+`scripts/k8s-images.sh [registry]` (optionally with `PLATFORM=linux/amd64`) runs `docker build --build-arg MODULE=<m>` and
 `docker push` for each module. The user sets the same registry in `kustomization.yaml`.
 On a local cluster that shares the Docker image store, build without pushing and leave
 the names as they are.
