@@ -17,7 +17,7 @@ over production hardening; every shortcut is named in the README.
 
 1. `docker compose up --build` starts the whole system. Docker is the only host
    requirement, because the build runs inside the image.
-2. `./mvnw verify` passes on the host with JDK 21+ and no Docker running.
+2. `./mvnw verify` passes on the host with JDK 27 and no Docker running.
 3. `scripts/smoke-test.sh` passes against the running stack: register, log in, create a
    product, set stock, place an order, see the notification, cancel the order, see stock
    restored.
@@ -33,25 +33,38 @@ tuning. The README lists these as next steps.
 
 | Concern | Choice |
 |---|---|
-| Language / build | Java 21, Maven multi-module, Maven wrapper |
+| Language / build | Java 27, Maven 3.10.0 via Maven wrapper 3.3.4, multi-module |
 | Framework | Spring Boot 4.1.1, Spring Cloud 2025.1.3 |
 | Discovery | Spring Cloud Netflix Eureka |
 | Configuration | Spring Cloud Config Server, native (file) backend |
 | Gateway | Spring Cloud Gateway Server WebMVC |
 | Resilience | Spring Cloud CircuitBreaker with Resilience4j |
-| Persistence | PostgreSQL, Spring Data JPA, Flyway |
-| Messaging | Apache Kafka (single node, KRaft), Spring for Apache Kafka, JSON payloads |
+| Persistence | PostgreSQL 18.6, Spring Data JPA, Flyway |
+| Messaging | Apache Kafka 4.3.1 (single node, KRaft), Spring for Apache Kafka, JSON payloads |
 | Security | RSA-signed JWTs (Nimbus), Spring Security OAuth2 resource server at the gateway |
-| Observability | Actuator, Micrometer, Zipkin tracing, Prometheus metrics |
+| Observability | Actuator, Micrometer, Zipkin 3.6.1 tracing, Prometheus 3.15.0 metrics |
 | Tests | JUnit 5, MockMvc, H2, Mockito |
-| Runtime | Docker Compose |
+| Runtime | Docker Compose, Eclipse Temurin 27 base images |
+
+Version policy: every component uses the latest stable (general availability) release as
+of 2026-10-07, checked against Maven Central, Adoptium and Docker Hub. Milestones, release
+candidates and snapshots are excluded, which rules out Spring Boot 4.2.0-M2, Spring Cloud
+2026.0.0-M1 and Maven 4.0.0-rc-7. Java libraries (Spring Framework, Spring Security, Spring
+Data, Hibernate, Flyway, Kafka clients, Resilience4j, Micrometer, the PostgreSQL driver,
+JUnit, Mockito) take the versions managed by the Spring Boot 4.1.1 and Spring Cloud
+2025.1.3 BOMs; none are overridden, so the set stays mutually compatible. Docker images
+are pinned to the exact tags above rather than `latest`.
+
+Java 27 is the newest GA release but not a long-term-support release (the newest LTS is
+25). If a build tool or library in the set fails on Java 27 during implementation, that is
+reported rather than silently downgraded.
 
 No Lombok: records for DTOs, hand-written entities.
 
 ## 3. Modules
 
-Maven group `com.example`, parent artifact `shop-microservices`. Each module's base package
-is `com.example.<name>` (`discovery`, `config`, `gateway`, `auth`, `product`, `inventory`,
+Maven group `com.vanmanh49`, parent artifact `shop-microservices`. Each module's base package
+is `com.vanmanh49.<name>` (`discovery`, `config`, `gateway`, `auth`, `product`, `inventory`,
 `order`, `notification`).
 
 | Module | Port | Responsibility | Depends on |
