@@ -7,6 +7,7 @@ import com.vanmanh49.order.client.dto.ReservationRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -20,7 +21,7 @@ public class InventoryClient {
 
 	private final CircuitBreaker circuitBreaker;
 
-	public InventoryClient(RestClient.Builder builder, CircuitBreakerFactory<?, ?> circuitBreakers,
+	public InventoryClient(@LoadBalanced RestClient.Builder builder, CircuitBreakerFactory<?, ?> circuitBreakers,
 			@Value("${shop.clients.inventory.base-url}") String baseUrl) {
 		this.restClient = builder.clone().baseUrl(baseUrl).build();
 		this.circuitBreaker = circuitBreakers.create("inventory");

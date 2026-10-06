@@ -8,6 +8,8 @@ spring:
     password: ${DB_PASSWORD:shop}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    listener:
+      observation-enabled: true
     consumer:
       group-id: notification-service
       auto-offset-reset: earliest

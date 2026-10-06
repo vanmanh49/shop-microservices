@@ -60,6 +60,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: -Xmx384m -Xms384m
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
       interval: 10s
@@ -70,6 +71,8 @@ services:
 
   zipkin:
     image: openzipkin/zipkin:3.6.1
+    environment:
+      JAVA_OPTS: -Xmx256m
     ports: ["9411:9411"]
     networks: [shop]
 

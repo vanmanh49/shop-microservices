@@ -8,6 +8,9 @@ spring:
     password: ${DB_PASSWORD:shop}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    template:
+      # Carries the trace across Kafka so the consumer joins the same trace.
+      observation-enabled: true
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -24,6 +27,8 @@ spring:
       resilience4j:
         # The HTTP client timeouts above bound each call.
         disable-time-limiter: true
+        # Run calls on the caller's thread: a separate pool would lose the trace context.
+        disable-thread-pool: true
 
 shop:
   clients:

@@ -16,3 +16,5 @@ spring:
       resilience4j:
         # The HTTP client timeouts above bound each proxied call.
         disable-time-limiter: true
+        # Run calls on the caller's thread: a separate pool would lose the trace context.
+        disable-thread-pool: true

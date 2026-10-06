@@ -58,13 +58,20 @@ poll_notification() {
   return 1
 }
 
-echo "Waiting for the gateway and its routes at $BASE_URL ..."
-for attempt in $(seq 1 60); do
-  call GET /api/products
-  [[ "$STATUS" == "200" ]] && break
-  [[ "$attempt" == "60" ]] && fail "gateway did not become ready within 2 minutes"
-  sleep 2
-done
+# wait_for PATH [TOKEN] -> waits up to 2 minutes for a route to answer 200.
+# After startup the gateway needs up to a minute to learn where each service is.
+wait_for() {
+  local path="$1" token="${2:-}"
+  for _ in $(seq 1 60); do
+    call GET "$path" "$token"
+    [[ "$STATUS" == "200" ]] && return 0
+    sleep 2
+  done
+  fail "$path did not become available within 2 minutes"
+}
+
+echo "Waiting for the gateway at $BASE_URL ..."
+wait_for /api/products
 
 SUFFIX="$(date +%s)$RANDOM"
 USERNAME="smoke$SUFFIX"
@@ -80,6 +87,10 @@ USER_TOKEN="$(jq -r .accessToken <<<"$BODY")"
 call POST /api/auth/login "" "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}"
 expect "2b. log in as the admin" 200 .tokenType Bearer
 ADMIN_TOKEN="$(jq -r .accessToken <<<"$BODY")"
+
+echo "Waiting for the remaining routes ..."
+wait_for /api/orders "$USER_TOKEN"
+wait_for /api/notifications "$USER_TOKEN"
 
 # 3. Only an admin may create products
 PRODUCT="{\"sku\":\"SMOKE-$SUFFIX\",\"name\":\"Smoke test keyboard\",\"description\":\"Created by smoke-test.sh\",\"price\":49.99}"
