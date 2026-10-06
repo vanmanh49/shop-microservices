@@ -12,6 +12,14 @@ resources:
   - k8s/kafka.yaml
   - k8s/zipkin.yaml
   - k8s/prometheus.yaml
+  - k8s/discovery-server.yaml
+  - k8s/config-server.yaml
+  - k8s/auth-service.yaml
+  - k8s/product-service.yaml
+  - k8s/inventory-service.yaml
+  - k8s/order-service.yaml
+  - k8s/notification-service.yaml
+  - k8s/api-gateway.yaml
 
 configMapGenerator:
   - name: postgres-init
