@@ -70,6 +70,10 @@ docker compose ps                # wait until every service is "healthy"
 
 The stack runs twelve containers and needs roughly 4 GB of memory.
 
+Right after startup the gateway can answer `503 Service unavailable` for a few seconds:
+"healthy" means a service has started, and the gateway still has to learn its address from
+Eureka. The smoke test waits for this; by hand, just retry.
+
 | URL | What |
 |---|---|
 | http://localhost:8080 | API gateway |

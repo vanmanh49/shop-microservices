@@ -3,8 +3,12 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+    # How often a service refreshes its copy of the registry (default 30s). Kept short so
+    # a newly started service becomes reachable quickly; costs more registry traffic.
+    registry-fetch-interval-seconds: 5
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
 
 management:
   endpoints:
@@ -23,6 +27,11 @@ management:
         endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
 
 spring:
+  cloud:
+    loadbalancer:
+      cache:
+        # How long a client reuses a resolved list of instances (default 35s).
+        ttl: 5s
   mvc:
     problemdetails:
       enabled: true

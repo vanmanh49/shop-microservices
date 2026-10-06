@@ -17,6 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "orders")
@@ -25,6 +26,12 @@ public class Order {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+
+	// Incremented on every update. Two requests changing the same order at once (two
+	// overlapping cancels) cannot both win: the slower one fails instead of overwriting.
+	@Version
+	@Column(nullable = false)
+	private long version;
 
 	@Column(name = "order_ref", nullable = false, unique = true)
 	private UUID orderRef;

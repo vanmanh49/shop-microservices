@@ -54,7 +54,7 @@ public class InventoryService {
 	}
 
 	public void release(String orderRef) {
-		List<Reservation> held = this.reservations.findByOrderRef(orderRef);
+		List<Reservation> held = this.reservations.lockByOrderRef(orderRef);
 		held.forEach((reservation) -> this.items.increment(reservation.getProductId(), reservation.getQuantity()));
 		this.reservations.deleteAllInBatch(held);
 	}

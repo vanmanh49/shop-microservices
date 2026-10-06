@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,6 +37,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler({ InsufficientStockException.class, OrderAlreadyCancelledException.class })
 	ProblemDetail conflict(RuntimeException ex) {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+	}
+
+	// Another request changed the order first, for example a second cancel.
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	ProblemDetail concurrentUpdate(ObjectOptimisticLockingFailureException ex) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+				"The order was changed by another request. Reload it and try again.");
 	}
 
 	@ExceptionHandler(ProductNotFoundException.class)
