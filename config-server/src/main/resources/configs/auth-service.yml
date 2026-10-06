@@ -1,0 +1,16 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/authdb
+    username: ${DB_USER:shop}
+    password: ${DB_PASSWORD:shop}
+
+shop:
+  security:
+    jwt:
+      ttl: PT1H
+    admin:
+      username: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin12345}

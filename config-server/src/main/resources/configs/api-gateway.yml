@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:8081/.well-known/jwks.json}
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 5s
+  cloud:
+    circuitbreaker:
+      resilience4j:
+        # The HTTP client timeouts above bound each proxied call.
+        disable-time-limiter: true

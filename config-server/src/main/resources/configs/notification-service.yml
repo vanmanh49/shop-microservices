@@ -1,0 +1,24 @@
+server:
+  port: 8085
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/notificationdb
+    username: ${DB_USER:shop}
+    password: ${DB_PASSWORD:shop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.value.default.type: com.vanmanh49.notification.event.OrderEvent
+        spring.json.use.type.headers: false
+        spring.json.trusted.packages: com.vanmanh49.notification.event
+
+shop:
+  kafka:
+    order-events-topic: order-events
