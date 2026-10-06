@@ -27,7 +27,14 @@ configMapGenerator:
   - name: prometheus-config
     files: [infra/prometheus/prometheus.yml]
 
-# Point the service images at your registry: one entry per service, same pattern.
+# To pull the service images from a registry, uncomment this block and replace
+# registry.example.com with yours (the one given to scripts/k8s-images.sh).
 # images:
-#   - name: shop/auth-service
-#     newName: registry.example.com/shop/auth-service
+#   - { name: shop/discovery-server, newName: registry.example.com/shop/discovery-server }
+#   - { name: shop/config-server, newName: registry.example.com/shop/config-server }
+#   - { name: shop/auth-service, newName: registry.example.com/shop/auth-service }
+#   - { name: shop/product-service, newName: registry.example.com/shop/product-service }
+#   - { name: shop/inventory-service, newName: registry.example.com/shop/inventory-service }
+#   - { name: shop/order-service, newName: registry.example.com/shop/order-service }
+#   - { name: shop/notification-service, newName: registry.example.com/shop/notification-service }
+#   - { name: shop/api-gateway, newName: registry.example.com/shop/api-gateway }

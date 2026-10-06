@@ -9,7 +9,7 @@ working together, with every shortcut called out.
 | Language / build | Java 27, Maven 3.10.0 (wrapper) |
 | Framework | Spring Boot 4.1.1, Spring Cloud 2025.1.3 |
 | Infrastructure | PostgreSQL 18.6, Apache Kafka 4.3.1, Zipkin 3.6.1, Prometheus 3.15.0 |
-| Runtime | Docker Compose |
+| Runtime | Docker Compose or Kubernetes |
 
 ## Architecture
 
@@ -132,6 +132,61 @@ curl -s -X POST $BASE/api/orders/1/cancel -H "Authorization: Bearer $TOKEN"
 
 Errors are returned as [problem details](https://www.rfc-editor.org/rfc/rfc9457) JSON.
 
+## Run on Kubernetes
+
+The same stack as plain manifests in `k8s/`, assembled by `kustomization.yaml`. It works on
+any cluster; Eureka and the config server are kept, so nothing in the services changes.
+
+You need a cluster with a default storage class and about 6 GB of free memory, `kubectl`
+pointing at it, and Docker to build the images.
+
+**1. Build the images.** With a registry your cluster can pull from:
+
+```bash
+./scripts/k8s-images.sh registry.example.com     # builds and pushes eight images
+```
+
+Then uncomment the `images:` block at the bottom of `kustomization.yaml` and put your
+registry in it. On a local cluster that uses Docker's own images (Docker Desktop), run
+`./scripts/k8s-images.sh` with no argument and leave `kustomization.yaml` alone. With
+kind or minikube, also load the images into the cluster (`kind load docker-image ...`,
+`minikube image load ...`).
+
+**2. Deploy.**
+
+```bash
+kubectl apply -k .
+kubectl -n shop get pods -w      # wait until every pod is 1/1 Running
+```
+
+A service that starts before the config server, Postgres or Kafka exits and is restarted,
+so a few restarts during the first minutes are expected.
+
+**3. Use it.** Nothing is exposed outside the cluster; forward the ports you want:
+
+```bash
+kubectl -n shop port-forward svc/api-gateway 8080:8080 &
+./scripts/smoke-test.sh
+
+kubectl -n shop port-forward svc/discovery-server 8761:8761   # Eureka dashboard
+kubectl -n shop port-forward svc/zipkin 9411:9411
+kubectl -n shop port-forward svc/prometheus 9090:9090
+```
+
+To give the gateway a public address instead, add `type: LoadBalancer` to the Service in
+`k8s/api-gateway.yaml`. Change the credentials in `k8s/config.yaml` first.
+
+**Remove it.** `kubectl delete -k .` deletes everything, including the database volume,
+because it removes the `shop` namespace.
+
+| Symptom | Cause |
+|---|---|
+| Service pods in `ImagePullBackOff` | The cluster cannot find `shop/...`: set the registry in `kustomization.yaml`, or load the images into the local cluster |
+| `postgres-0` stays `Pending` | The cluster has no default storage class (`kubectl get storageclass`) |
+| A pod is `OOMKilled` | Raise its memory limit in `k8s/<name>.yaml` |
+
+`./scripts/k8s-check.sh` checks the manifests without a cluster.
+
 ## Tests
 
 ```bash
@@ -183,7 +238,7 @@ the services working together.
 - **No shared code between services.** DTOs and the order event are duplicated on purpose,
   so services only depend on each other's JSON.
 
-Not included: Kubernetes manifests, a CI pipeline, Grafana dashboards, a frontend, refresh
+Not included: a CI pipeline, Grafana dashboards, a frontend, refresh
 tokens, rate limiting.
 
 ## Design documents
