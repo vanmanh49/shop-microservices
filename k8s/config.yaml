@@ -1,0 +1,24 @@
+# Settings shared by every Spring Boot service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shop-env
+data:
+  CONFIG_SERVER_URL: http://config-server:8888
+  EUREKA_URL: http://discovery-server:8761/eureka
+  ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+  DB_HOST: postgres
+  KAFKA_BOOTSTRAP: kafka:9092
+  AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
+  JAVA_TOOL_OPTIONS: -Xmx256m
+---
+# Development credentials. Change them before exposing this anywhere.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shop-secrets
+stringData:
+  DB_USER: shop
+  DB_PASSWORD: shop
+  ADMIN_USERNAME: admin
+  ADMIN_PASSWORD: admin12345

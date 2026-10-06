@@ -1,0 +1,25 @@
+# The whole shop stack for Kubernetes: kubectl apply -k .
+# This file sits at the repo root so it can reuse the files in infra/.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shop
+
+resources:
+  - k8s/namespace.yaml
+  - k8s/config.yaml
+  - k8s/postgres.yaml
+  - k8s/kafka.yaml
+  - k8s/zipkin.yaml
+  - k8s/prometheus.yaml
+
+configMapGenerator:
+  - name: postgres-init
+    files: [infra/postgres/init.sql]
+  - name: prometheus-config
+    files: [infra/prometheus/prometheus.yml]
+
+# Point the service images at your registry: one entry per service, same pattern.
+# images:
+#   - name: shop/auth-service
+#     newName: registry.example.com/shop/auth-service
