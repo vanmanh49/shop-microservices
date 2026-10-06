@@ -1,0 +1,40 @@
+server:
+  port: 8084
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/orderdb
+    username: ${DB_USER:shop}
+    password: ${DB_PASSWORD:shop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    template:
+      # Carries the trace across Kafka so the consumer joins the same trace.
+      observation-enabled: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        # Fail fast when the broker is down instead of holding the request for a minute.
+        max.block.ms: 5000
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 3s
+  cloud:
+    circuitbreaker:
+      resilience4j:
+        # The HTTP client timeouts above bound each call.
+        disable-time-limiter: true
+        # Run calls on the caller's thread: a separate pool would lose the trace context.
+        disable-thread-pool: true
+
+shop:
+  clients:
+    product:
+      base-url: http://product-service
+    inventory:
+      base-url: http://inventory-service
+  kafka:
+    order-events-topic: order-events

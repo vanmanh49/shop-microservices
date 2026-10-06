@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: notification-service
+  cloud:
+    config:
+      enabled: false
+  kafka:
+    listener:
+      auto-startup: false
+    # Mirrors config-server/src/main/resources/configs/notification-service.yml.
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.value.default.type: com.vanmanh49.notification.event.OrderEvent
+        spring.json.use.type.headers: false
+        spring.json.trusted.packages: com.vanmanh49.notification.event
+  datasource:
+    url: jdbc:h2:mem:test;MODE=PostgreSQL
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mvc:
+    problemdetails:
+      enabled: true
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  tracing:
+    export:
+      enabled: false
+
+shop:
+  kafka:
+    order-events-topic: order-events
