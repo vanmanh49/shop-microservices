@@ -28,8 +28,8 @@ Eureka/config server with Kubernetes-native discovery (code changes, removes the
 | `k8s/config.yaml` | ConfigMap `shop-env` (URLs, `DB_HOST`, `KAFKA_BOOTSTRAP`, `JAVA_TOOL_OPTIONS`) and Secret `shop-secrets` (`DB_USER`, `DB_PASSWORD`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`) |
 | `k8s/postgres.yaml` | StatefulSet + Service |
 | `k8s/kafka.yaml`, `k8s/zipkin.yaml`, `k8s/prometheus.yaml` | Deployment + Service each |
-| `k8s/<service>.yaml` × 7 | Deployment + Service for each Spring Boot module |
-| `scripts/k8s-images.sh` | Builds and pushes the 7 images to a registry given as argument |
+| `k8s/<service>.yaml` × 8 | Deployment + Service for each Spring Boot module |
+| `scripts/k8s-images.sh` | Builds and pushes the 8 images to a registry given as argument |
 | `README.md` | New "Run on Kubernetes" section; remove "Kubernetes manifests" from "Not included" |
 
 The kustomization sits at the repo root because Kustomize only reads files at or below its
@@ -88,7 +88,7 @@ Same development values as Compose, in a Secret marked development-only.
 
 ## Verification
 
-- Here: `kubectl kustomize .` renders, and a client-side dry run accepts the output.
+- Here: `kubectl kustomize .` renders and `scripts/k8s-check.sh` asserts on the output. A dry run needs a cluster.
 - On a cluster: all pods Ready, then `scripts/smoke-test.sh` through the port-forward.
   Not possible on the authoring machine (no cluster, Docker not running).
 
