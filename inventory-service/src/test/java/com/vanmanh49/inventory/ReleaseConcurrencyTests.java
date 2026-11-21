@@ -15,6 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 class ReleaseConcurrencyTests {
@@ -25,6 +26,9 @@ class ReleaseConcurrencyTests {
 
 	@Autowired
 	private InventoryService inventory;
+
+	@Autowired
+	private TransactionTemplate transactions;
 
 	@AfterEach
 	void cleanUp() {
@@ -53,6 +57,47 @@ class ReleaseConcurrencyTests {
 		}
 		finally {
 			executor.shutdownNow();
+		}
+	}
+
+	/**
+	 * order-service gives up on a slow reservation and releases it while the reservation is
+	 * still running. Once both finish, the stock must be back.
+	 */
+	@Test
+	void releaseDuringReservationReturnsTheStock() throws Exception {
+		String orderRef = "release-during-reserve";
+		this.inventory.setStock(PRODUCT_ID, 5);
+		CountDownLatch reserved = new CountDownLatch(1);
+		CountDownLatch commit = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<?> reservation = executor.submit(() -> this.transactions.executeWithoutResult((status) -> {
+				this.inventory.reserve(new ReservationRequest(orderRef, List.of(new ReservationItem(PRODUCT_ID, 3))));
+				reserved.countDown();
+				awaitQuietly(commit);
+			}));
+			assertThat(reserved.await(10, TimeUnit.SECONDS)).isTrue();
+			Future<?> release = executor.submit(() -> this.inventory.release(orderRef));
+			// Let the release reach the database while the reservation is still open.
+			Thread.sleep(300);
+			commit.countDown();
+			reservation.get(10, TimeUnit.SECONDS);
+			release.get(10, TimeUnit.SECONDS);
+
+			assertThat(this.inventory.get(PRODUCT_ID).getAvailable()).isEqualTo(5);
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	private static void awaitQuietly(CountDownLatch latch) {
+		try {
+			latch.await(10, TimeUnit.SECONDS);
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
 		}
 	}
 

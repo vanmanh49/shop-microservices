@@ -35,7 +35,7 @@ Eight Maven modules under one parent `pom.xml`, package root `com.vanmanh49.<mod
 
 **Inter-service calls** use load-balanced HTTP clients by Eureka name (`http://product-service`), configured in `order-service/.../client/ClientConfig`, with Resilience4j circuit breakers. The gateway also has a circuit-breaker fallback (`FallbackController`).
 
-**Overselling prevention** is in `inventory-service`: atomic `InventoryItemRepository.decrement` plus row locks in `ReservationRepository.lockByOrderRef`; there are dedicated concurrency tests.
+**Overselling prevention** is in `inventory-service`: atomic `InventoryItemRepository.decrement`, plus one `reservation_orders` row per order that reserve and release both write first (`ReservationOrderRepository`), so a release that overtakes a slow reservation still returns its stock and a released order cannot reserve again. The release side uses Postgres `insert ... on conflict do nothing`; there are dedicated concurrency tests.
 
 **Per-service conventions:**
 - Each service owns its PostgreSQL database; schema is Flyway-only (`src/main/resources/db/migration/V<n>__*.sql`), JPA runs with `ddl-auto: validate`. Add a new migration rather than editing an existing one. The per-service databases are created by `infra/postgres/init.sql`, which Compose mounts and the root `kustomization.yaml` also turns into the `postgres-init` ConfigMap for Kubernetes.

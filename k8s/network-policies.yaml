@@ -1,0 +1,65 @@
+# The business services trust the X-User-Id header, so only the callers that need them may
+# connect: the gateway, order-service where it calls product and inventory, and Prometheus
+# for metrics. Kubelet probes come from the node and are not affected on common network
+# plugins. A plugin that enforces NetworkPolicy is required (Docker Desktop's does not).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: auth-service-ingress
+spec:
+  podSelector: { matchLabels: { app: auth-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+        - podSelector: { matchLabels: { app: prometheus } }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: product-service-ingress
+spec:
+  podSelector: { matchLabels: { app: product-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+        - podSelector: { matchLabels: { app: order-service } }
+        - podSelector: { matchLabels: { app: prometheus } }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: inventory-service-ingress
+spec:
+  podSelector: { matchLabels: { app: inventory-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+        - podSelector: { matchLabels: { app: order-service } }
+        - podSelector: { matchLabels: { app: prometheus } }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: order-service-ingress
+spec:
+  podSelector: { matchLabels: { app: order-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+        - podSelector: { matchLabels: { app: prometheus } }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: notification-service-ingress
+spec:
+  podSelector: { matchLabels: { app: notification-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+        - podSelector: { matchLabels: { app: prometheus } }

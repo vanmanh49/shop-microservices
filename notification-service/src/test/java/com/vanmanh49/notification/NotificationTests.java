@@ -71,10 +71,23 @@ class NotificationTests {
 
 		this.mvc.perform(get("/api/notifications").header("X-User-Id", "42"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(2))
-			.andExpect(jsonPath("$[0].type").value("ORDER_CANCELLED"))
-			.andExpect(jsonPath("$[1].type").value("ORDER_PLACED"))
-			.andExpect(jsonPath("$[0].orderId").value(7));
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].type").value("ORDER_CANCELLED"))
+			.andExpect(jsonPath("$.content[1].type").value("ORDER_PLACED"))
+			.andExpect(jsonPath("$.content[0].orderId").value(7));
+	}
+
+	@Test
+	void listIsPaged() throws Exception {
+		this.notifications.handle(event("ORDER_PLACED", 7L, "42", "99.98"));
+		this.notifications.handle(event("ORDER_PLACED", 8L, "42", "10.00"));
+		this.notifications.handle(event("ORDER_PLACED", 9L, "42", "10.00"));
+
+		this.mvc.perform(get("/api/notifications?size=2").header("X-User-Id", "42"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].orderId").value(9))
+			.andExpect(jsonPath("$.page.totalElements").value(3));
 	}
 
 	@Test

@@ -10,7 +10,10 @@ spring:
   http:
     clients:
       connect-timeout: 2s
-      read-timeout: 5s
+      # Longer than order-service's slowest path (product call 3s, reservation 3s, release
+      # 3s, Kafka send up to 5s): if the gateway gave up first, the client would see 503
+      # for an order that was placed, and a retry would place it twice.
+      read-timeout: 20s
   cloud:
     circuitbreaker:
       resilience4j:

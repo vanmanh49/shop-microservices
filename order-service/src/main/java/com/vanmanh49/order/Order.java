@@ -18,6 +18,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "orders")
@@ -43,7 +44,7 @@ public class Order {
 	@Column(nullable = false, length = 20)
 	private OrderStatus status;
 
-	@Column(nullable = false, precision = 14, scale = 2)
+	@Column(nullable = false, precision = 19, scale = 2)
 	private BigDecimal total;
 
 	@Column(name = "created_at", nullable = false)
@@ -51,6 +52,7 @@ public class Order {
 
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("id")
+	@BatchSize(size = 100)
 	private List<OrderItem> items = new ArrayList<>();
 
 	protected Order() {

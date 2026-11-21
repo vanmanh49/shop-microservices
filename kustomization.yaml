@@ -20,6 +20,7 @@ resources:
   - k8s/order-service.yaml
   - k8s/notification-service.yaml
   - k8s/api-gateway.yaml
+  - k8s/network-policies.yaml
 
 configMapGenerator:
   - name: postgres-init

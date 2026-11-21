@@ -122,13 +122,13 @@ curl -s -X POST $BASE/api/orders/1/cancel -H "Authorization: Bearer $TOKEN"
 |---|---|---|
 | `POST /api/auth/register`, `POST /api/auth/login` | anyone | Login returns `accessToken` (valid 1 hour) |
 | `GET /api/auth/me` | signed in | |
-| `GET /api/products`, `GET /api/products/{id}` | anyone | Paged, at most 100 per page |
+| `GET /api/products`, `GET /api/products/{id}` | anyone | Paged, at most 100 per page; `?ids=1&ids=2` returns those products (unknown ids left out) |
 | `POST`, `PUT`, `DELETE /api/products...` | admin | |
 | `GET /api/inventory/{productId}` | signed in | |
 | `PUT /api/inventory/{productId}` | admin | Sets the stock level |
-| `POST /api/orders`, `GET /api/orders`, `GET /api/orders/{id}` | signed in | Users see only their own orders |
+| `POST /api/orders`, `GET /api/orders`, `GET /api/orders/{id}` | signed in | Users see only their own orders; the list is paged, newest first |
 | `POST /api/orders/{id}/cancel` | signed in | |
-| `GET /api/notifications` | signed in | |
+| `GET /api/notifications` | signed in | Paged, newest first |
 
 Errors are returned as [problem details](https://www.rfc-editor.org/rfc/rfc9457) JSON.
 
@@ -249,7 +249,9 @@ the services working together.
 
 - **Services trust the gateway's headers.** `X-User-Id` and `X-User-Roles` are believed by
   the services without checking a token. That is only safe because nothing but the gateway
-  can reach them. In a less controlled network, each service should validate the JWT itself.
+  can reach them. Compose publishes no service ports, and on Kubernetes `k8s/network-policies.yaml`
+  admits only the gateway, order-service and Prometheus (this needs a network plugin that
+  enforces NetworkPolicy). In a less controlled network, each service should validate the JWT itself.
 - **Development credentials.** The admin account (`admin` / `admin12345`) and the database
   password are set in `docker-compose.yml`. Replace them before exposing the stack.
 - **The signing key is regenerated on every start of `auth-service`.** Tokens stop working

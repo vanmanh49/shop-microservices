@@ -30,8 +30,8 @@ import org.springframework.web.client.RestClient;
 
 class ClientErrorMappingTests {
 
-	private static final String PRODUCT_JSON = """
-			{"id":1,"sku":"SKU-1","name":"Keyboard","description":"Mechanical","price":49.99}""";
+	private static final String KEYBOARD_JSON = """
+			[{"id":1,"sku":"SKU-1","name":"Keyboard","description":"Mechanical","price":49.99}]""";
 
 	private MockRestServiceServer server;
 
@@ -53,35 +53,42 @@ class ClientErrorMappingTests {
 	}
 
 	@Test
-	void productIsReadFromCatalogResponse() {
-		this.server.expect(requestTo("http://product-service/api/products/1"))
-			.andRespond(withSuccess(PRODUCT_JSON, MediaType.APPLICATION_JSON));
+	void productsAreReadInOneCall() {
+		this.server.expect(requestTo("http://product-service/api/products?ids=1&ids=2"))
+			.andRespond(withSuccess("""
+					[{"id":1,"sku":"SKU-1","name":"Keyboard","price":49.99},
+					 {"id":2,"sku":"SKU-2","name":"Mouse","price":19.50}]""", MediaType.APPLICATION_JSON));
 
-		assertThat(this.productClient.get(1L)).isEqualTo(new ProductDto(1L, "Keyboard", new BigDecimal("49.99")));
+		assertThat(this.productClient.getAll(List.of(1L, 2L))).containsOnlyKeys(1L, 2L)
+			.containsEntry(1L, new ProductDto(1L, "Keyboard", new BigDecimal("49.99")));
 	}
 
 	@Test
-	void product404MapsToProductNotFound() {
-		this.server.expect(requestTo("http://product-service/api/products/7"))
-			.andRespond(withStatus(HttpStatus.NOT_FOUND));
+	void missingProductMapsToProductNotFound() {
+		this.server.expect(requestTo("http://product-service/api/products?ids=1&ids=7"))
+			.andRespond(withSuccess(KEYBOARD_JSON, MediaType.APPLICATION_JSON));
 
-		assertThatExceptionOfType(ProductNotFoundException.class).isThrownBy(() -> this.productClient.get(7L));
+		assertThatExceptionOfType(ProductNotFoundException.class)
+			.isThrownBy(() -> this.productClient.getAll(List.of(1L, 7L)))
+			.withMessageContaining("7");
 	}
 
 	@Test
 	void product500MapsToDependencyUnavailable() {
-		this.server.expect(requestTo("http://product-service/api/products/1"))
+		this.server.expect(requestTo("http://product-service/api/products?ids=1"))
 			.andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
-		assertThatExceptionOfType(DependencyUnavailableException.class).isThrownBy(() -> this.productClient.get(1L));
+		assertThatExceptionOfType(DependencyUnavailableException.class)
+			.isThrownBy(() -> this.productClient.getAll(List.of(1L)));
 	}
 
 	@Test
 	void connectionFailureMapsToDependencyUnavailable() {
-		this.server.expect(requestTo("http://product-service/api/products/1"))
+		this.server.expect(requestTo("http://product-service/api/products?ids=1"))
 			.andRespond(withException(new IOException("connection refused")));
 
-		assertThatExceptionOfType(DependencyUnavailableException.class).isThrownBy(() -> this.productClient.get(1L));
+		assertThatExceptionOfType(DependencyUnavailableException.class)
+			.isThrownBy(() -> this.productClient.getAll(List.of(1L)));
 	}
 
 	@Test
@@ -127,27 +134,28 @@ class ClientErrorMappingTests {
 	}
 
 	@Test
-	void repeatedNotFoundDoesNotOpenCircuit() {
-		this.server.expect(ExpectedCount.times(10), requestTo("http://product-service/api/products/7"))
-			.andRespond(withStatus(HttpStatus.NOT_FOUND));
-		this.server.expect(requestTo("http://product-service/api/products/1"))
-			.andRespond(withSuccess(PRODUCT_JSON, MediaType.APPLICATION_JSON));
+	void repeatedMissingProductDoesNotOpenCircuit() {
+		this.server.expect(ExpectedCount.times(10), requestTo("http://product-service/api/products?ids=7"))
+			.andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+		this.server.expect(requestTo("http://product-service/api/products?ids=1"))
+			.andRespond(withSuccess(KEYBOARD_JSON, MediaType.APPLICATION_JSON));
 
 		for (int i = 0; i < 10; i++) {
-			assertThatExceptionOfType(ProductNotFoundException.class).isThrownBy(() -> this.productClient.get(7L));
+			assertThatExceptionOfType(ProductNotFoundException.class)
+				.isThrownBy(() -> this.productClient.getAll(List.of(7L)));
 		}
 
-		assertThat(this.productClient.get(1L).name()).isEqualTo("Keyboard");
+		assertThat(this.productClient.getAll(List.of(1L))).containsKey(1L);
 	}
 
 	@Test
 	void circuitOpensAfterRepeatedFailuresAndStopsCallingTheService() {
-		this.server.expect(ExpectedCount.times(5), requestTo("http://product-service/api/products/1"))
+		this.server.expect(ExpectedCount.times(5), requestTo("http://product-service/api/products?ids=1"))
 			.andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
 		for (int i = 0; i < 6; i++) {
 			assertThatExceptionOfType(DependencyUnavailableException.class)
-				.isThrownBy(() -> this.productClient.get(1L));
+				.isThrownBy(() -> this.productClient.getAll(List.of(1L)));
 		}
 
 		// The sixth call was rejected by the open circuit without reaching the server.

@@ -124,6 +124,18 @@ class ProductApiTests {
 	}
 
 	@Test
+	void getByIdsReturnsOnlyExistingProducts() throws Exception {
+		long keyboard = createAndGetId("SKU-1", "Keyboard", "49.99");
+		long mouse = createAndGetId("SKU-2", "Mouse", "19.50");
+
+		this.mvc.perform(get("/api/products?ids={a}&ids={b}&ids=999999", keyboard, mouse))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].name").value("Keyboard"))
+			.andExpect(jsonPath("$[1].name").value("Mouse"));
+	}
+
+	@Test
 	void listWithNegativePageReturns400() throws Exception {
 		this.mvc.perform(get("/api/products?page=-1")).andExpect(status().isBadRequest());
 	}

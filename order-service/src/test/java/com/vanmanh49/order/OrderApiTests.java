@@ -3,6 +3,7 @@ package com.vanmanh49.order;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -16,7 +17,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.jayway.jsonpath.JsonPath;
 import com.vanmanh49.order.client.DependencyUnavailableException;
@@ -49,6 +53,11 @@ import org.springframework.test.web.servlet.ResultActions;
 @AutoConfigureMockMvc
 class OrderApiTests {
 
+	private static final Map<Long, ProductDto> CATALOG = Map.of(1L,
+			new ProductDto(1L, "Keyboard", new BigDecimal("49.99")), 2L,
+			new ProductDto(2L, "Mouse", new BigDecimal("19.50")), 3L,
+			new ProductDto(3L, "Server rack", new BigDecimal("200000000.00")));
+
 	@Autowired
 	private MockMvc mvc;
 
@@ -69,8 +78,7 @@ class OrderApiTests {
 
 	@BeforeEach
 	void stubCatalog() {
-		given(this.productClient.get(1L)).willReturn(new ProductDto(1L, "Keyboard", new BigDecimal("49.99")));
-		given(this.productClient.get(2L)).willReturn(new ProductDto(2L, "Mouse", new BigDecimal("19.50")));
+		given(this.productClient.getAll(anyCollection())).willAnswer((call) -> lookUp(call.getArgument(0)));
 	}
 
 	@AfterEach
@@ -122,8 +130,6 @@ class OrderApiTests {
 
 	@Test
 	void unknownProductReturns422AndReservesNothing() throws Exception {
-		given(this.productClient.get(999L)).willThrow(new ProductNotFoundException(999L));
-
 		place("42", "{\"productId\":999,\"quantity\":1}").andExpect(status().isUnprocessableEntity());
 
 		verify(this.inventoryClient, never()).reserve(anyString(), anyList());
@@ -142,7 +148,8 @@ class OrderApiTests {
 
 	@Test
 	void productServiceDownReturns503AndReservesNothing() throws Exception {
-		given(this.productClient.get(1L)).willThrow(new DependencyUnavailableException("product-service", null));
+		given(this.productClient.getAll(anyCollection()))
+			.willThrow(new DependencyUnavailableException("product-service", null));
 
 		place("42", "{\"productId\":1,\"quantity\":1}").andExpect(status().isServiceUnavailable());
 
@@ -207,8 +214,28 @@ class OrderApiTests {
 
 		this.mvc.perform(get("/api/orders").header("X-User-Id", "42"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(2))
-			.andExpect(jsonPath("$[0].items[0].productName").value("Keyboard"));
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].items[0].productName").value("Keyboard"));
+	}
+
+	@Test
+	void listIsPagedNewestFirst() throws Exception {
+		placeAndGetId("42");
+		placeAndGetId("42");
+		long newest = placeAndGetId("42");
+
+		this.mvc.perform(get("/api/orders?size=2").header("X-User-Id", "42"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].id").value(newest))
+			.andExpect(jsonPath("$.page.totalElements").value(3));
+	}
+
+	@Test
+	void largeTotalIsStored() throws Exception {
+		place("42", "{\"productId\":3,\"quantity\":10000}").andExpect(status().isCreated());
+
+		assertThat(this.orders.findAll().getFirst().getTotal()).isEqualByComparingTo("2000000000000");
 	}
 
 	@Test
@@ -272,6 +299,18 @@ class OrderApiTests {
 			.getContentAsString();
 		Number id = JsonPath.read(body, "$.id");
 		return id.longValue();
+	}
+
+	private static Map<Long, ProductDto> lookUp(Collection<Long> ids) {
+		Map<Long, ProductDto> found = new HashMap<>();
+		for (Long id : ids) {
+			ProductDto product = CATALOG.get(id);
+			if (product == null) {
+				throw new ProductNotFoundException(id);
+			}
+			found.put(id, product);
+		}
+		return found;
 	}
 
 	private OrderEvent publishedEvent() {

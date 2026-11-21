@@ -3,7 +3,6 @@ package com.vanmanh49.order.client;
 import java.time.Duration;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
-import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
@@ -60,7 +59,6 @@ public class ClientConfig {
 			.build();
 		return (factory) -> factory.configureDefault((id) -> new Resilience4JConfigBuilder(id)
 			.circuitBreakerConfig(circuitBreaker)
-			.timeLimiterConfig(TimeLimiterConfig.ofDefaults())
 			.build());
 	}
 

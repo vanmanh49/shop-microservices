@@ -103,6 +103,18 @@ class InventoryApiTests {
 		assertThat(this.reservations.findByOrderRef("o-1")).isEmpty();
 	}
 
+	// The release of a timed-out reservation can arrive first; the late reservation must not
+	// take the stock.
+	@Test
+	void reserveAfterReleaseReturns409AndTakesNothing() throws Exception {
+		setStock(1, 5);
+		this.mvc.perform(delete("/api/inventory/reservations/o-1")).andExpect(status().isNoContent());
+
+		reserve("o-1", "{\"productId\":1,\"quantity\":3}").andExpect(status().isConflict());
+
+		expectAvailable(1, 5);
+	}
+
 	@Test
 	void releaseUnknownOrderRefReturns204() throws Exception {
 		this.mvc.perform(delete("/api/inventory/reservations/nope")).andExpect(status().isNoContent());

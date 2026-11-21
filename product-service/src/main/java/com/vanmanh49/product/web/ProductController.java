@@ -1,12 +1,14 @@
 package com.vanmanh49.product.web;
 
 import java.net.URI;
+import java.util.List;
 
 import com.vanmanh49.product.ProductService;
 import com.vanmanh49.product.web.dto.ProductRequest;
 import com.vanmanh49.product.web.dto.ProductResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedModel;
@@ -41,6 +43,12 @@ public class ProductController {
 			@RequestParam(defaultValue = "20") @Min(1) int size) {
 		PageRequest pageable = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("id"));
 		return new PagedModel<>(this.productService.list(pageable).map(ProductResponse::from));
+	}
+
+	// One call for every product of an order. Unknown ids are left out of the answer.
+	@GetMapping(params = "ids")
+	public List<ProductResponse> getAll(@RequestParam @Size(max = MAX_PAGE_SIZE) List<Long> ids) {
+		return this.productService.getAll(ids).stream().map(ProductResponse::from).toList();
 	}
 
 	@GetMapping("/{id}")
