@@ -130,7 +130,7 @@ class OrderApiTests {
 
 	@Test
 	void unknownProductReturns422AndReservesNothing() throws Exception {
-		place("42", "{\"productId\":999,\"quantity\":1}").andExpect(status().isUnprocessableEntity());
+		place("42", "{\"productId\":999,\"quantity\":1}").andExpect(status().isUnprocessableContent());
 
 		verify(this.inventoryClient, never()).reserve(anyString(), anyList());
 		assertThat(this.orders.count()).isZero();

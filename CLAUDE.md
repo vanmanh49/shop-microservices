@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A reference shop (products, stock, orders) built as Spring Boot microservices: Java 27, Spring Boot 4.1.1, Spring Cloud 2025.1.3, Maven wrapper. `README.md` is the full user guide (API table, manual curl walkthrough, Kubernetes troubleshooting); this file covers what you need to change code.
+A reference shop (products, stock, orders) built as Spring Boot microservices: Java 27, Spring Boot 4.2.0, Spring Cloud 2026.0.0, Maven wrapper. `README.md` is the full user guide (API table, manual curl walkthrough, Kubernetes troubleshooting); this file covers what you need to change code.
 
 ## Commands
 

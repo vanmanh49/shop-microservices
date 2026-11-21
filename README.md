@@ -6,9 +6,9 @@ working together, with every shortcut called out.
 
 | | |
 |---|---|
-| Language / build | Java 27, Maven 3.10.0 (wrapper) |
-| Framework | Spring Boot 4.1.1, Spring Cloud 2025.1.3 |
-| Infrastructure | PostgreSQL 18.6, Apache Kafka 4.3.1, Zipkin 3.6.1, Prometheus 3.15.0 |
+| Language / build | Java 27, Maven 3.10.1 (wrapper) |
+| Framework | Spring Boot 4.2.0, Spring Cloud 2026.0.0 |
+| Infrastructure | PostgreSQL 18.7, Apache Kafka 4.4.0, Zipkin 3.6.1, Prometheus 3.16.0 |
 | Runtime | Docker Compose or Kubernetes |
 
 ## Architecture
