@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # kind:count pairs the rendered output must contain.
-EXPECTED="Namespace:1 ConfigMap:3 Secret:1 StatefulSet:1 Deployment:11 Service:12"
+EXPECTED="Namespace:1 ConfigMap:3 Secret:1 StatefulSet:1 Deployment:11 Service:12 NetworkPolicy:5"
 
 fail() { echo "FAIL  $1"; exit 1; }
 

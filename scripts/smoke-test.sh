@@ -50,7 +50,7 @@ poll_notification() {
   for _ in $(seq 1 30); do
     call GET /api/notifications "$token"
     if [[ "$STATUS" == "200" ]] && jq -e --arg type "$type" --argjson id "$order_id" \
-        'any(.[]; .type == $type and .orderId == $id)' <<<"$BODY" >/dev/null 2>&1; then
+        'any(.content[]; .type == $type and .orderId == $id)' <<<"$BODY" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1

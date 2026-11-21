@@ -53,6 +53,13 @@ class AuthFlowTests {
 			.andExpect(jsonPath("$.errors.password").exists());
 	}
 
+	// 25 characters, but 75 bytes: BCrypt only takes 72.
+	@Test
+	void registerPasswordOver72BytesReturns400() throws Exception {
+		register("alice", "ệ".repeat(25)).andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors.passwordAtMost72Bytes").exists());
+	}
+
 	@Test
 	void loginReturnsTokenThatVerifiesAgainstJwks() throws Exception {
 		String registered = register("alice", "password1").andReturn().getResponse().getContentAsString();

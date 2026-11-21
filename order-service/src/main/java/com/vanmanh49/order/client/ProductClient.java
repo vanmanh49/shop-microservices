@@ -1,6 +1,8 @@
 package com.vanmanh49.order.client;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.vanmanh49.order.client.dto.ProductDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +10,6 @@ import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @Component
@@ -26,23 +27,28 @@ public class ProductClient {
 		this.circuitBreaker = circuitBreakers.create("product");
 	}
 
-	public ProductDto get(Long id) {
-		Optional<ProductDto> product = this.circuitBreaker.run(() -> fetch(id), (failure) -> {
-			throw new DependencyUnavailableException(SERVICE, failure);
-		});
-		return product.orElseThrow(() -> new ProductNotFoundException(id));
-	}
-
-	// A 404 is a business answer, not a failure: it is turned into a value inside the
-	// circuit breaker so that it never counts towards opening the circuit.
-	private Optional<ProductDto> fetch(Long id) {
-		try {
-			return Optional
-				.ofNullable(this.restClient.get().uri("/api/products/{id}", id).retrieve().body(ProductDto.class));
+	/**
+	 * Fetches all products in one call. A product the catalog does not have is a business
+	 * answer, not a failure: it is checked outside the circuit breaker so that it never
+	 * counts towards opening the circuit.
+	 */
+	public Map<Long, ProductDto> getAll(Collection<Long> ids) {
+		ProductDto[] found = this.circuitBreaker.run(() -> this.restClient.get()
+			.uri((uri) -> uri.path("/api/products").queryParam("ids", ids.toArray()).build())
+			.retrieve()
+			.body(ProductDto[].class), (failure) -> {
+				throw new DependencyUnavailableException(SERVICE, failure);
+			});
+		Map<Long, ProductDto> byId = new HashMap<>();
+		for (ProductDto product : found) {
+			byId.put(product.id(), product);
 		}
-		catch (HttpClientErrorException.NotFound ex) {
-			return Optional.empty();
+		for (Long id : ids) {
+			if (!byId.containsKey(id)) {
+				throw new ProductNotFoundException(id);
+			}
 		}
+		return byId;
 	}
 
 }

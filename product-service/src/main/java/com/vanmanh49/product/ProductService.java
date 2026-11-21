@@ -1,5 +1,7 @@
 package com.vanmanh49.product;
 
+import java.util.List;
+
 import com.vanmanh49.product.web.dto.ProductRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,12 @@ public class ProductService {
 	@Transactional(readOnly = true)
 	public Page<Product> list(Pageable pageable) {
 		return this.products.findAll(pageable);
+	}
+
+	/** The products that exist among the given ids; unknown ids are left out. */
+	@Transactional(readOnly = true)
+	public List<Product> getAll(List<Long> ids) {
+		return this.products.findByIdInOrderById(ids);
 	}
 
 	@Transactional(readOnly = true)

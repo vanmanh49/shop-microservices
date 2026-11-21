@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.vanmanh49.inventory.InsufficientStockException;
+import com.vanmanh49.inventory.OrderReleasedException;
 import com.vanmanh49.inventory.StockNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -25,8 +26,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
-	@ExceptionHandler(InsufficientStockException.class)
-	ProblemDetail insufficientStock(InsufficientStockException ex) {
+	@ExceptionHandler({ InsufficientStockException.class, OrderReleasedException.class })
+	ProblemDetail conflict(RuntimeException ex) {
 		return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 	}
 

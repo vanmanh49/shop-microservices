@@ -1,6 +1,16 @@
 {
   "enabledPlugins": {
-    "ponytail@ponytail": true,
-    "superpowers@anthropic-plugin-directory": true
+    "context7@anthropic-plugin-directory": true,
+    "superpowers@anthropic-plugin-directory": true,
+    "claude-md-management@anthropic-plugin-directory": true,
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    }
   }
 }

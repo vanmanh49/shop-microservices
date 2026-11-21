@@ -14,6 +14,8 @@ import com.vanmanh49.order.client.dto.ReservationItem;
 import com.vanmanh49.order.web.dto.OrderLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,10 +45,11 @@ public class OrderService {
 		for (OrderLine line : lines) {
 			quantities.merge(line.productId(), line.quantity(), Integer::sum);
 		}
+		Map<Long, ProductDto> products = this.productClient.getAll(quantities.keySet());
 		List<OrderItem> items = new ArrayList<>();
 		List<ReservationItem> reservation = new ArrayList<>();
 		quantities.forEach((productId, quantity) -> {
-			ProductDto product = this.productClient.get(productId);
+			ProductDto product = products.get(productId);
 			items.add(new OrderItem(product.id(), product.name(), product.price(), quantity));
 			reservation.add(new ReservationItem(productId, quantity));
 		});
@@ -82,8 +85,8 @@ public class OrderService {
 		return this.store.getOwned(id, userId);
 	}
 
-	public List<Order> list(String userId) {
-		return this.store.listOwned(userId);
+	public Page<Order> list(String userId, Pageable pageable) {
+		return this.store.listOwned(userId, pageable);
 	}
 
 	private void releaseQuietly(UUID orderRef) {

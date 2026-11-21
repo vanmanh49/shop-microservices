@@ -30,7 +30,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: kafka
-          image: apache/kafka:4.3.1
+          image: apache/kafka:4.4.0
           ports:
             - containerPort: 9092
           env:

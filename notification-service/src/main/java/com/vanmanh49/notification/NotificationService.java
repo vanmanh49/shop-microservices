@@ -1,10 +1,10 @@
 package com.vanmanh49.notification;
 
-import java.util.List;
-
 import com.vanmanh49.notification.event.OrderEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +37,8 @@ public class NotificationService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Notification> listFor(String userId) {
-		return this.notifications.findByUserIdOrderByIdDesc(userId);
+	public Page<Notification> listFor(String userId, Pageable pageable) {
+		return this.notifications.findByUserId(userId, pageable);
 	}
 
 	private static String message(OrderEvent event) {

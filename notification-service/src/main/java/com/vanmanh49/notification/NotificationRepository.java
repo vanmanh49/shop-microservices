@@ -1,14 +1,15 @@
 package com.vanmanh49.notification;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
 	boolean existsByEventId(UUID eventId);
 
-	List<Notification> findByUserIdOrderByIdDesc(String userId);
+	Page<Notification> findByUserId(String userId, Pageable pageable);
 
 }

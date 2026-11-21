@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.UUID;
 
 import com.vanmanh49.order.event.OrderEvent;
+import org.hibernate.Hibernate;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,8 +50,11 @@ public class OrderStore {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Order> listOwned(String userId) {
-		return this.orders.findByUserIdOrderByIdDesc(userId);
+	public Page<Order> listOwned(String userId, Pageable pageable) {
+		Page<Order> page = this.orders.findByUserId(userId, pageable);
+		// Loads the items of the whole page in one query, before the transaction ends.
+		page.forEach((order) -> Hibernate.initialize(order.getItems()));
+		return page;
 	}
 
 }
